@@ -5,18 +5,24 @@ import (
 	"net/http"
 )
 
-type TokenAuthorizationHandler struct {
-	sortedPrivilege bool
-	exact           bool
+type PrivilegesAuthorizationHandler struct {
+	sortedPrivilege   bool
+	exact             bool
+	privilegesService PrivilegesService
 }
 
-func NewTokenAuthorizationHandler(sortedPrivilege bool, exact bool) *TokenAuthorizationHandler {
-	return &TokenAuthorizationHandler{sortedPrivilege, exact}
+func NewPrivilegesAuthorizationHandler(sortedPrivilege bool, exact bool, privilegesService PrivilegesService) *PrivilegesAuthorizationHandler {
+	return &PrivilegesAuthorizationHandler{sortedPrivilege, exact, privilegesService}
 }
 
-func (h *TokenAuthorizationHandler) Authorize(privilegeId string, action int32) gin.HandlerFunc {
+func (h *PrivilegesAuthorizationHandler) Authorize(privilegeId string, action int32) gin.HandlerFunc {
 	return func(ctx *gin.Context) {
-		privileges := GetPrivilegesFromGinContext(ctx)
+		userId := GetUserIdFromGinContext(ctx)
+		if len(userId) == 0 {
+			ctx.AbortWithStatusJSON(http.StatusBadRequest, "Invalid User Id")
+			return
+		}
+		privileges := h.privilegesService.GetPrivileges(ctx.Request.Context(), userId)
 		if privileges == nil || len(privileges) == 0 {
 			ctx.AbortWithStatusJSON(http.StatusForbidden, "No Permission: Require privileges for this user")
 			return

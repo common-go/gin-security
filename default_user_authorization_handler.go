@@ -16,7 +16,7 @@ func NewUserAuthorizationHandler(sortedUsers bool) *DefaultUserAuthorizationHand
 
 func (h *DefaultUserAuthorizationHandler) Authorize(users []string) gin.HandlerFunc {
 	return func(ctx *gin.Context) {
-		userId := h.getUserIdFromContext(ctx)
+		userId := GetUserIdFromGinContext(ctx)
 		if len(userId) == 0 {
 			ctx.AbortWithStatusJSON(http.StatusBadRequest, "Invalid User Id.")
 			return
@@ -26,12 +26,12 @@ func (h *DefaultUserAuthorizationHandler) Authorize(users []string) gin.HandlerF
 			return
 		}
 		if h.sortedUsers {
-			if h.hasSortedUser(userId, users) {
+			if HasSortedUser(userId, users) {
 				ctx.Next()
 				return
 			}
 		}
-		if h.hasUser(userId, users) {
+		if HasUser(userId, users) {
 			ctx.Next()
 			return
 		}
@@ -39,7 +39,7 @@ func (h *DefaultUserAuthorizationHandler) Authorize(users []string) gin.HandlerF
 	}
 }
 
-func (h *DefaultUserAuthorizationHandler) hasUser(currentUser string, users []string) bool {
+func HasUser(currentUser string, users []string) bool {
 	for _, user := range users {
 		if user == currentUser {
 			return true
@@ -48,19 +48,10 @@ func (h *DefaultUserAuthorizationHandler) hasUser(currentUser string, users []st
 	return false
 }
 
-func (h *DefaultUserAuthorizationHandler) hasSortedUser(currentUser string, users []string) bool {
+func HasSortedUser(currentUser string, users []string) bool {
 	i := sort.SearchStrings(users, currentUser)
 	if i >= 0 && users[i] == currentUser {
 		return true
 	}
 	return false
-}
-
-func (h *DefaultUserAuthorizationHandler) getUserIdFromContext(ctx *gin.Context) string {
-	if token, exist := ctx.Get(Authorization); exist {
-		if authorizationToken, exist := token.(map[string]interface{}); exist {
-			return GetUserId(authorizationToken)
-		}
-	}
-	return ""
 }

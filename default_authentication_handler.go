@@ -8,9 +8,7 @@ import (
 	"time"
 )
 
-const (
-	Authorization = "authorization"
-)
+const Authorization = "authorization"
 
 type DefaultAuthenticationHandler struct {
 	TokenBlacklistService TokenBlacklistService
